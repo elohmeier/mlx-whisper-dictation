@@ -7,3 +7,4 @@ argparse
 rumps
 numpy
 mlx-whisper
+pyperclip

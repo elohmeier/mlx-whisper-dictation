@@ -6,13 +6,14 @@ import numpy as np
 import rumps
 from pynput import keyboard
 
-# from whisper import load_model
-
 # added because of MLX
 import mlx_whisper
 from mlx_whisper.load_models import load_model
 
 import platform
+
+# import pyperclip in order to copy the transcribed text automatically
+import pyperclip
 
 
 class SpeechTranscriber:
@@ -29,6 +30,13 @@ class SpeechTranscriber:
         result = mlx_whisper.transcribe(
             audio_data, language=language, path_or_hf_repo=model_name
         )
+
+        # Get the transcribed text
+        transcribed_text = result["text"].strip()
+
+        # Copy to clipboard
+        pyperclip.copy(transcribed_text)
+        print("Transcription copied to clipboard!")
 
         is_first = True
         for element in result["text"]:
@@ -81,6 +89,9 @@ class Recorder:
         self.transcriber.transcribe(audio_data_fp32, language)
 
 
+from pynput import keyboard
+
+
 class GlobalKeyListener:
     def __init__(self, app, key_combination):
         self.app = app
@@ -89,25 +100,49 @@ class GlobalKeyListener:
         self.key2_pressed = False
 
     def parse_key_combination(self, key_combination):
-        key1_name, key2_name = key_combination.split("+")
-        key1 = getattr(keyboard.Key, key1_name, keyboard.KeyCode(char=key1_name))
-        key2 = getattr(keyboard.Key, key2_name, keyboard.KeyCode(char=key2_name))
-        return key1, key2
+        keys = key_combination.split("+")
+        if len(keys) == 1:  # Single key (e.g., F5)
+            key_name = keys[0].lower()
+            key = getattr(keyboard.Key, key_name, None)
+            if key is None:
+                try:
+                    key_code = int(key_name[1:])  # Extract number from 'f5'
+                    key = keyboard.KeyCode.from_vk(
+                        96 + key_code
+                    )  # Virtual keycode for F5
+                except ValueError:
+                    raise ValueError(f"Invalid key combination: {key_combination}")
+            return key, None
+        elif len(keys) == 2:  # Combination keys
+            key1 = getattr(
+                keyboard.Key, keys[0].lower(), keyboard.KeyCode(char=keys[0])
+            )
+            key2 = getattr(
+                keyboard.Key, keys[1].lower(), keyboard.KeyCode(char=keys[1])
+            )
+            return key1, key2
+        else:
+            raise ValueError(f"Invalid key combination: {key_combination}")
 
     def on_key_press(self, key):
-        if key == self.key1:
-            self.key1_pressed = True
-        elif key == self.key2:
-            self.key2_pressed = True
+        if self.key2 is None:  # Single key
+            if key == self.key1:
+                self.app.toggle()
+        else:  # Combination keys
+            if key == self.key1:
+                self.key1_pressed = True
+            elif key == self.key2:
+                self.key2_pressed = True
 
-        if self.key1_pressed and self.key2_pressed:
-            self.app.toggle()
+            if self.key1_pressed and self.key2_pressed:
+                self.app.toggle()
 
     def on_key_release(self, key):
-        if key == self.key1:
-            self.key1_pressed = False
-        elif key == self.key2:
-            self.key2_pressed = False
+        if self.key2 is not None:  # Combination keys
+            if key == self.key1:
+                self.key1_pressed = False
+            elif key == self.key2:
+                self.key2_pressed = False
 
 
 class DoubleCommandKeyListener:
@@ -283,7 +318,7 @@ def parse_args():
         "-k",
         "--key_combination",
         type=str,
-        default="cmd_l+alt" if platform.system() == "Darwin" else "ctrl+alt",
+        default="f5" if platform.system() == "Darwin" else "ctrl+alt",
         help="Specify the key combination to toggle the app. Example: cmd_l+alt for macOS "
         "ctrl+alt for other platforms. Default: cmd_r+alt (macOS) or ctrl+alt (others).",
     )
@@ -306,7 +341,7 @@ def parse_args():
         "-t",
         "--max_time",
         type=float,
-        default=30,
+        default=30000,
         help="Specify the maximum recording time in seconds. The app will automatically stop recording after this duration. "
         "Default: 30 seconds.",
     )
@@ -330,19 +365,6 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-
-    # commented out
-    """
-    print("Loading model...")
-    
-    #added this
-    print('model_name:', args.model_name)
-    
-    model = load_model(model_name)
-    
-    #added this
-    print(f"{model_name} model loaded")
-    """
 
     # delayed order of this line
     model_name = args.model_name
