@@ -38,17 +38,24 @@ class SpeechTranscriber:
         pyperclip.copy(transcribed_text)
         print("Transcription copied to clipboard!")
 
-        is_first = True
-        for element in result["text"]:
-            if is_first and element == " ":
-                is_first = False
-                continue
+        # Simulate pasting (by pressing Cmd+V for macOS or Ctrl+V for Windows/Linux)
+        with self.pykeyboard.pressed(
+            keyboard.Key.cmd
+        ):  # Use Key.ctrl for Windows/Linux
+            self.pykeyboard.press("v")
+            self.pykeyboard.release("v")
 
-            try:
-                self.pykeyboard.type(element)
-                time.sleep(0.0025)
-            except:
-                pass
+        #is_first = True
+        #for element in result["text"]:
+        #    if is_first and element == " ":
+        #        is_first = False
+        #        continue
+
+        #    try:
+        #        self.pykeyboard.type(element)
+        #        time.sleep(0.0025)
+        #    except:
+        #        pass
 
 
 class Recorder:
