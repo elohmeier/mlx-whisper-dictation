@@ -1,8 +1,8 @@
-import argparse
 import platform
 import threading
 import time
 
+import click
 import mlx_whisper
 import numpy as np
 import pyaudio
@@ -164,7 +164,7 @@ class StatusBarApp(rumps.App):
 
     @rumps.clicked("Start Recording")
     def start_app(self, _):
-        print("Listening...")
+        click.echo("Listening...")
         self.started = True
         self.menu["Start Recording"].set_callback(None)
         self.menu["Stop Recording"].set_callback(self.stop_app)
@@ -185,13 +185,13 @@ class StatusBarApp(rumps.App):
         if self.timer is not None:
             self.timer.cancel()
 
-        print("Transcribing...")
+        click.echo("Transcribing...")
         self.title = "⏯"
         self.started = False
         self.menu["Stop Recording"].set_callback(None)
         self.menu["Start Recording"].set_callback(self.start_app)
         self.recorder.stop()
-        print("Done.\n")
+        click.echo("Done.\n")
 
     def update_title(self):
         if self.started:
@@ -207,148 +207,124 @@ class StatusBarApp(rumps.App):
             self.start_app(None)
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Dictation app using the MLX OpenAI Whisper model. By default the keyboard shortcut cmd+option "
-        "starts and stops dictation",
-    )
-    parser.add_argument(
-        "-m",
-        "--model_name",
-        type=str,
-        choices=[
-            "mlx-community/whisper-large-v3-mlx",
-            "mlx-community/whisper-tiny-mlx-q4",
-            "mlx-community/whisper-large-v2-mlx-fp32",
-            "mlx-community/whisper-tiny.en-mlx-q4",
-            "mlx-community/whisper-base.en-mlx-q4",
-            "mlx-community/whisper-small.en-mlx-q4",
-            "mlx-community/whisper-tiny-mlx-fp32",
-            "mlx-community/whisper-base-mlx-fp32",
-            "mlx-community/whisper-small-mlx-fp32",
-            "mlx-community/whisper-medium-mlx-fp32",
-            "mlx-community/whisper-base-mlx-2bit",
-            "mlx-community/whisper-tiny-mlx-8bit",
-            "mlx-community/whisper-tiny.en-mlx-4bit",
-            "mlx-community/whisper-base-mlx",
-            "mlx-community/whisper-base-mlx-8bit",
-            "mlx-community/whisper-base.en-mlx-4bit",
-            "mlx-community/whisper-small-mlx",
-            "mlx-community/whisper-small-mlx-8bit",
-            "mlx-community/whisper-small.en-mlx-4bit",
-            "mlx-community/whisper-medium-mlx-8bit",
-            "mlx-community/whisper-medium.en-mlx-8bit",
-            "mlx-community/whisper-large-mlx-4bit",
-            "mlx-community/whisper-large-v1-mlx",
-            "mlx-community/whisper-large-v1-mlx-8bit",
-            "mlx-community/whisper-large-v2-mlx-8bit",
-            "mlx-community/whisper-large-v2-mlx-4bit",
-            "mlx-community/whisper-large-v1-mlx-4bit",
-            "mlx-community/whisper-large-mlx-8bit",
-            "mlx-community/whisper-large-mlx",
-            "mlx-community/whisper-medium.en-mlx-4bit",
-            "mlx-community/whisper-small.en-mlx-8bit",
-            "mlx-community/whisper-small.en-mlx",
-            "mlx-community/whisper-small-mlx-4bit",
-            "mlx-community/whisper-base.en-mlx-8bit",
-            "mlx-community/whisper-base.en-mlx",
-            "mlx-community/whisper-base-mlx-4bit",
-            "mlx-community/whisper-tiny.en-mlx-8bit",
-            "mlx-community/whisper-tiny.en-mlx",
-            "mlx-community/whisper-tiny-mlx",
-            "mlx-community/whisper-medium.en-mlx-fp32",
-            "mlx-community/whisper-small.en-mlx-fp32",
-            "mlx-community/whisper-base.en-mlx-fp32",
-            "mlx-community/whisper-tiny.en-mlx-fp32",
-            "mlx-community/whisper-medium-mlx-q4",
-            "mlx-community/whisper-small-mlx-q4",
-            "mlx-community/whisper-base-mlx-q4",
-            "mlx-community/whisper-large-v3-turbo",
-            "mlx-community/whisper-turbo",
-        ],
-        default="mlx-community/whisper-large-v3-mlx",
-        help="""Specify the MLX Whisper model to use. Example: mlx-community/whisper-large-v3-mlx.
-        To see the  most up to date list of models visit https://huggingface.co/collections/mlx-community/whisper-663256f9964fbb1177db93dc?utm_source=chatgpt.com. 
-        Note that the models ending in .en are trained only on English speech and will perform better on English 
-        language.""",
-    )
-    parser.add_argument(
-        "-k",
-        "--key_combination",
-        type=str,
-        default="cmd_l+alt" if platform.system() == "Darwin" else "ctrl+alt",
-        help="Specify the key combination to toggle the app. Example: cmd_l+alt for macOS "
-        "ctrl+alt for other platforms. Default: cmd_r+alt (macOS) or ctrl+alt (others).",
-    )
-    parser.add_argument(
-        "--k_double_cmd",
-        action="store_true",
-        help="If set, use double Right Command key press on macOS to toggle the app (double click to begin recording, single click to stop recording). "
-        "Ignores the --key_combination argument.",
-    )
-    parser.add_argument(
-        "-l",
-        "--language",
-        type=str,
-        default=None,
-        help='Specify the two-letter language code (e.g., "en" for English) to improve recognition accuracy. '
-        "This can be especially helpful for smaller model sizes.  To see the full list of supported languages, "
-        "check out the official list [here](https://github.com/openai/whisper/blob/main/whisper/tokenizer.py).",
-    )
-    parser.add_argument(
-        "-t",
-        "--max_time",
-        type=float,
-        default=30,
-        help="Specify the maximum recording time in seconds. The app will automatically stop recording after this duration. "
-        "Default: 30 seconds.",
-    )
+MLX_WHISPER_MODELS = [
+    "mlx-community/whisper-large-v3-mlx",
+    "mlx-community/whisper-tiny-mlx-q4",
+    "mlx-community/whisper-large-v2-mlx-fp32",
+    "mlx-community/whisper-tiny.en-mlx-q4",
+    "mlx-community/whisper-base.en-mlx-q4",
+    "mlx-community/whisper-small.en-mlx-q4",
+    "mlx-community/whisper-tiny-mlx-fp32",
+    "mlx-community/whisper-base-mlx-fp32",
+    "mlx-community/whisper-small-mlx-fp32",
+    "mlx-community/whisper-medium-mlx-fp32",
+    "mlx-community/whisper-base-mlx-2bit",
+    "mlx-community/whisper-tiny-mlx-8bit",
+    "mlx-community/whisper-tiny.en-mlx-4bit",
+    "mlx-community/whisper-base-mlx",
+    "mlx-community/whisper-base-mlx-8bit",
+    "mlx-community/whisper-base.en-mlx-4bit",
+    "mlx-community/whisper-small-mlx",
+    "mlx-community/whisper-small-mlx-8bit",
+    "mlx-community/whisper-small.en-mlx-4bit",
+    "mlx-community/whisper-medium-mlx-8bit",
+    "mlx-community/whisper-medium.en-mlx-8bit",
+    "mlx-community/whisper-large-mlx-4bit",
+    "mlx-community/whisper-large-v1-mlx",
+    "mlx-community/whisper-large-v1-mlx-8bit",
+    "mlx-community/whisper-large-v2-mlx-8bit",
+    "mlx-community/whisper-large-v2-mlx-4bit",
+    "mlx-community/whisper-large-v1-mlx-4bit",
+    "mlx-community/whisper-large-mlx-8bit",
+    "mlx-community/whisper-large-mlx",
+    "mlx-community/whisper-medium.en-mlx-4bit",
+    "mlx-community/whisper-small.en-mlx-8bit",
+    "mlx-community/whisper-small.en-mlx",
+    "mlx-community/whisper-small-mlx-4bit",
+    "mlx-community/whisper-base.en-mlx-8bit",
+    "mlx-community/whisper-base.en-mlx",
+    "mlx-community/whisper-base-mlx-4bit",
+    "mlx-community/whisper-tiny.en-mlx-8bit",
+    "mlx-community/whisper-tiny.en-mlx",
+    "mlx-community/whisper-tiny-mlx",
+    "mlx-community/whisper-medium.en-mlx-fp32",
+    "mlx-community/whisper-small.en-mlx-fp32",
+    "mlx-community/whisper-base.en-mlx-fp32",
+    "mlx-community/whisper-tiny.en-mlx-fp32",
+    "mlx-community/whisper-medium-mlx-q4",
+    "mlx-community/whisper-small-mlx-q4",
+    "mlx-community/whisper-base-mlx-q4",
+    "mlx-community/whisper-large-v3-turbo",
+    "mlx-community/whisper-turbo",
+]
 
-    args = parser.parse_args()
 
-    if args.language is not None:
-        args.language = args.language.split(",")
+@click.command(
+    help="Dictation app using the MLX OpenAI Whisper model. By default the keyboard shortcut cmd+option starts and stops dictation"
+)
+@click.option(
+    "-m",
+    "--model-name",
+    type=click.Choice(MLX_WHISPER_MODELS),
+    default="mlx-community/whisper-large-v3-mlx",
+    help="""Specify the MLX Whisper model to use. Example: mlx-community/whisper-large-v3-mlx.
+    To see the most up to date list of models visit https://huggingface.co/collections/mlx-community/whisper-663256f9964fbb1177db93dc?utm_source=chatgpt.com. 
+    Note that the models ending in .en are trained only on English speech and will perform better on English language.""",
+)
+@click.option(
+    "-k",
+    "--key-combination",
+    default=lambda: "cmd_l+alt" if platform.system() == "Darwin" else "ctrl+alt",
+    help="Specify the key combination to toggle the app. Example: cmd_l+alt for macOS ctrl+alt for other platforms. Default: cmd_l+alt (macOS) or ctrl+alt (others).",
+)
+@click.option(
+    "--k-double-cmd",
+    is_flag=True,
+    help="If set, use double Right Command key press on macOS to toggle the app (double click to begin recording, single click to stop recording). Ignores the --key-combination argument.",
+)
+@click.option(
+    "-l",
+    "--language",
+    help='Specify the two-letter language code (e.g., "en" for English) to improve recognition accuracy. This can be especially helpful for smaller model sizes. Multiple languages can be specified with commas (e.g., "en,fr,de").',
+)
+@click.option(
+    "-t",
+    "--max-time",
+    type=float,
+    default=30.0,
+    help="Specify the maximum recording time in seconds. The app will automatically stop recording after this duration. Default: 30 seconds.",
+)
+def main(model_name, key_combination, k_double_cmd, language, max_time):
+    """Run the MLX Whisper dictation app."""
+
+    if language is not None:
+        language = language.split(",")
 
     if (
-        args.model_name.endswith(".en")
-        and args.language is not None
-        and any(lang != "en" for lang in args.language)
+        model_name.endswith(".en")
+        and language is not None
+        and any(lang != "en" for lang in language)
     ):
-        raise ValueError(
+        raise click.UsageError(
             "If using a model ending in .en, you cannot specify a language other than English."
         )
 
-    return args
-
-
-def main() -> None:
-    args = parse_args()
-
-    # commented out
-    """
-    print("Loading model...")
-    
-    #added this
-    print('model_name:', args.model_name)
-    
-    model = load_model(model_name)
-    
-    #added this
-    print(f"{model_name} model loaded")
-    """
-
-    transcriber = SpeechTranscriber(args.model_name)
+    transcriber = SpeechTranscriber(model_name)
     recorder = Recorder(transcriber)
 
-    app = StatusBarApp(recorder, args.language, args.max_time)
-    if args.k_double_cmd:
+    app = StatusBarApp(recorder, language, max_time)
+    if k_double_cmd:
         key_listener = DoubleCommandKeyListener(app)
     else:
-        key_listener = GlobalKeyListener(app, args.key_combination)
+        key_listener = GlobalKeyListener(app, key_combination)
     listener = keyboard.Listener(
         on_press=key_listener.on_key_press, on_release=key_listener.on_key_release
     )
     listener.start()
 
-    print("Running...")
+    click.echo("Running...")
     app.run()
+
+
+if __name__ == "__main__":
+    main()
