@@ -1,33 +1,26 @@
 import argparse
-import time
+import platform
 import threading
-import pyaudio
+import time
+
+import mlx_whisper
 import numpy as np
+import pyaudio
 import rumps
 from pynput import keyboard
 
-# from whisper import load_model
-
-# added because of MLX
-import mlx_whisper
-from mlx_whisper.load_models import load_model
-
-import platform
-
 
 class SpeechTranscriber:
-
     # removed model from arguments
-    def __init__(self):
-
+    def __init__(self, model_name):
         # self.model = model
         self.pykeyboard = keyboard.Controller()
+        self.model_name = model_name
 
     def transcribe(self, audio_data, language=None):
-
         # changed because of MLX
         result = mlx_whisper.transcribe(
-            audio_data, language=language, path_or_hf_repo=model_name
+            audio_data, language=language, path_or_hf_repo=self.model_name
         )
 
         is_first = True
@@ -328,7 +321,7 @@ def parse_args():
     return args
 
 
-if __name__ == "__main__":
+def main() -> None:
     args = parse_args()
 
     # commented out
@@ -344,11 +337,7 @@ if __name__ == "__main__":
     print(f"{model_name} model loaded")
     """
 
-    # delayed order of this line
-    model_name = args.model_name
-
-    # removed model argument passing
-    transcriber = SpeechTranscriber()
+    transcriber = SpeechTranscriber(args.model_name)
     recorder = Recorder(transcriber)
 
     app = StatusBarApp(recorder, args.language, args.max_time)
