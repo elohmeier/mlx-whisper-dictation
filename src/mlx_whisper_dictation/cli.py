@@ -251,20 +251,20 @@ def main(model_name, language, copy):
     finally:
         # --- Cleanup ---
         # Ensure stream and PyAudio are closed even on error
-        if stream and not stream.is_stopped():
+        if stream:
             try:
-                stream.stop_stream()
-            except Exception:
-                pass
-        if stream and stream.is_active():  # Check if close needed
-            try:
+                # Only try to stop if not already stopped
+                if stream.is_active():
+                    stream.stop_stream()
                 stream.close()
-            except Exception:
+            except Exception as e:
+                logging.debug(f"Error during stream cleanup: {e}")
                 pass
         if p:
             try:
                 p.terminate()
-            except Exception:
+            except Exception as e:
+                logging.debug(f"Error terminating PyAudio: {e}")
                 pass
 
         # Delete the temporary file
