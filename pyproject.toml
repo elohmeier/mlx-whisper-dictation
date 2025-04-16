@@ -11,12 +11,10 @@ dependencies = [
     "click>=8.1.8",
     "mlx-whisper>=0.4.2",
     "pyaudio>=0.2.14",
-    "pynput>=1.8.1",
-    "rumps>=0.4.0",
 ]
 
 [project.scripts]
-mlx-whisper-dictation = "mlx_whisper_dictation:main"
+mlx-whisper-dictation = "mlx_whisper_dictation.cli:main"
 
 [build-system]
 requires = ["hatchling"]
