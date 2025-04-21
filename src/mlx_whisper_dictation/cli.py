@@ -200,7 +200,7 @@ def setup_hotkey_listener(hotkey_combo):
 
         def on_press(key):
             try:
-                logging.info(f"Key pressed: {key}")
+                logging.debug(f"Key pressed: {key}")
                 currently_pressed.add(key)
 
                 # Check if all required keys are pressed
@@ -217,7 +217,7 @@ def setup_hotkey_listener(hotkey_combo):
 
         def on_release(key):
             try:
-                logging.info(f"Key released: {key}")
+                logging.debug(f"Key released: {key}")
                 if key in currently_pressed:
                     currently_pressed.remove(key)
 
@@ -413,7 +413,9 @@ def main(model_name, language, copy, hotkey, debug):
     current_debug_flag = debug
 
     if debug:
-        logging.info("Debug mode enabled - will play back recorded audio")
+        # Set logging level to DEBUG when debug flag is enabled
+        logging.getLogger().setLevel(logging.DEBUG)
+        logging.debug("Debug mode enabled - will play back recorded audio")
 
     logging.info(f"Using model: {model_name}")
     if language:
