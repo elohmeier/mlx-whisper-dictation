@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import subprocess
 import threading
@@ -20,6 +21,9 @@ AUDIO_FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
 CHUNK = 1024
+# Path to system sound files
+START_SOUND = "/System/Library/Sounds/Blow.aiff"
+STOP_SOUND = "/System/Library/Sounds/Frog.aiff"
 # --- Globals for Recording Thread ---
 frames = []
 recording_active = False
@@ -77,6 +81,20 @@ MLX_WHISPER_MODELS = [
     "mlx-community/whisper-large-v3-turbo",
     "mlx-community/whisper-turbo",
 ]
+
+
+# --- Sound Notification Function ---
+def play_sound(sound_file):
+    """Play a notification sound using macOS afplay command."""
+    if not os.path.exists(sound_file):
+        logging.warning(f"Sound file not found: {sound_file}")
+        return
+
+    try:
+        # Use the macOS afplay command which can handle AIFF files
+        subprocess.run(["afplay", sound_file], check=True)
+    except Exception as e:
+        logging.error(f"Error playing sound: {e}")
 
 
 # --- Recording Function (to run in a separate thread) ---
@@ -156,7 +174,8 @@ def main(model_name, language, copy):
         )
         logging.info("Audio stream opened.")
 
-        # --- Start Recording ---
+        # --- Play start sound and start recording ---
+        play_sound(START_SOUND)
         recording_active = True
         recording_thread = threading.Thread(target=record_audio)
         recording_thread.start()
@@ -171,6 +190,9 @@ def main(model_name, language, copy):
         if recording_thread:
             recording_thread.join(timeout=2)  # Add a timeout
         logging.info("Recording stopped.")
+
+        # Play stop sound
+        play_sound(STOP_SOUND)
 
         # --- Stop and Close Audio Stream ---
         if stream:
