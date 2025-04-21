@@ -85,7 +85,7 @@ def record_audio():
     global frames, recording_active, stream
     logging.info("Recording thread started.")
     frames = []  # Reset frames at the start of recording
-    while recording_active:
+    while recording_active and stream is not None:
         try:
             data = stream.read(CHUNK, exception_on_overflow=False)
             frames.append(data)
@@ -205,7 +205,10 @@ def main(model_name, language, copy):
         end_time = time.time()
         logging.info(f"Transcription finished in {end_time - start_time:.2f} seconds.")
 
-        transcribed_text = result.get("text", "").strip()
+        transcribed_text = result.get("text", "")
+        if isinstance(transcribed_text, list):
+            transcribed_text = " ".join(transcribed_text)
+        transcribed_text = transcribed_text.strip()
 
         # --- Output Result ---
         if transcribed_text:

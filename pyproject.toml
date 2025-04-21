@@ -19,3 +19,6 @@ mlx-whisper-dictation = "mlx_whisper_dictation.cli:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.pyright]
+typeCheckingMode = "basic"
