@@ -30,58 +30,6 @@ CHUNK = 1024
 START_SOUND = "/System/Library/Sounds/Blow.aiff"
 STOP_SOUND = "/System/Library/Sounds/Frog.aiff"
 
-# --- MLX Whisper Models (Keep this list updated as needed) ---
-MLX_WHISPER_MODELS = [
-    "mlx-community/whisper-large-v3-mlx",
-    "mlx-community/whisper-tiny-mlx-q4",
-    "mlx-community/whisper-large-v2-mlx-fp32",
-    "mlx-community/whisper-tiny.en-mlx-q4",
-    "mlx-community/whisper-base.en-mlx-q4",
-    "mlx-community/whisper-small.en-mlx-q4",
-    "mlx-community/whisper-tiny-mlx-fp32",
-    "mlx-community/whisper-base-mlx-fp32",
-    "mlx-community/whisper-small-mlx-fp32",
-    "mlx-community/whisper-medium-mlx-fp32",
-    "mlx-community/whisper-base-mlx-2bit",
-    "mlx-community/whisper-tiny-mlx-8bit",
-    "mlx-community/whisper-tiny.en-mlx-4bit",
-    "mlx-community/whisper-base-mlx",
-    "mlx-community/whisper-base-mlx-8bit",
-    "mlx-community/whisper-base.en-mlx-4bit",
-    "mlx-community/whisper-small-mlx",
-    "mlx-community/whisper-small-mlx-8bit",
-    "mlx-community/whisper-small.en-mlx-4bit",
-    "mlx-community/whisper-medium-mlx-8bit",
-    "mlx-community/whisper-medium.en-mlx-8bit",
-    "mlx-community/whisper-large-mlx-4bit",
-    "mlx-community/whisper-large-v1-mlx",
-    "mlx-community/whisper-large-v1-mlx-8bit",
-    "mlx-community/whisper-large-v2-mlx-8bit",
-    "mlx-community/whisper-large-v2-mlx-4bit",
-    "mlx-community/whisper-large-v1-mlx-4bit",
-    "mlx-community/whisper-large-mlx-8bit",
-    "mlx-community/whisper-large-mlx",
-    "mlx-community/whisper-medium.en-mlx-4bit",
-    "mlx-community/whisper-small.en-mlx-8bit",
-    "mlx-community/whisper-small.en-mlx",
-    "mlx-community/whisper-small-mlx-4bit",
-    "mlx-community/whisper-base.en-mlx-8bit",
-    "mlx-community/whisper-base.en-mlx",
-    "mlx-community/whisper-base-mlx-4bit",
-    "mlx-community/whisper-tiny.en-mlx-8bit",
-    "mlx-community/whisper-tiny.en-mlx",
-    "mlx-community/whisper-tiny-mlx",
-    "mlx-community/whisper-medium.en-mlx-fp32",
-    "mlx-community/whisper-small.en-mlx-fp32",
-    "mlx-community/whisper-base.en-mlx-fp32",
-    "mlx-community/whisper-tiny.en-mlx-fp32",
-    "mlx-community/whisper-medium-mlx-q4",
-    "mlx-community/whisper-small-mlx-q4",
-    "mlx-community/whisper-base-mlx-q4",
-    "mlx-community/whisper-large-v3-turbo",
-    "mlx-community/whisper-turbo",
-]
-
 
 class DictationApp:
     """Main application class for MLX Whisper Dictation."""
@@ -502,7 +450,7 @@ class DictationApp:
                     if message == "toggle":
                         await self.toggle_recording()
                     self.hotkey_queue.task_done()
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # No hotkey event, just continue the loop
                     pass
                 except Exception as e:
@@ -591,7 +539,6 @@ class DictationApp:
 @click.option(
     "-m",
     "--model-name",
-    type=click.Choice(MLX_WHISPER_MODELS),
     default="mlx-community/whisper-large-v3-mlx",
     help="Specify the MLX Whisper model name or path.",
     show_default=True,
