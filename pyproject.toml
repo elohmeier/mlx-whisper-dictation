@@ -11,6 +11,7 @@ dependencies = [
     "click>=8.1.8",
     "mlx-whisper>=0.4.2",
     "pyaudio>=0.2.14",
+    "pynput>=1.8.1",
 ]
 
 [project.scripts]
