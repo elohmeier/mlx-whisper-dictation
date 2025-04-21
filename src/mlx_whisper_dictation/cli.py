@@ -4,7 +4,9 @@ import platform
 import shutil
 import subprocess
 import threading
+import tempfile
 import time
+import wave
 
 import click
 import mlx_whisper
@@ -140,16 +142,18 @@ def start_stop_recording_hotkey():
     logging.info(f"Toggle recording state. Current state: {recording_active}")
 
     if not recording_active:
-        # Start recording
-        play_sound(START_SOUND)
+        # Start recording first
         recording_active = True
         recording_thread = threading.Thread(target=record_audio)
         recording_thread.start()
+        # Then play sound (after recording has started)
+        play_sound(START_SOUND)
         click.echo("🔴 Recording started via hotkey...")
     else:
-        # Stop recording
+        # Stop recording first
         recording_active = False
         click.echo("Recording stopped via hotkey...")
+        # Then play sound
         play_sound(STOP_SOUND)
 
         # Process the recording
@@ -238,6 +242,40 @@ def setup_hotkey_listener(hotkey_combo):
         return None
 
 
+def play_recorded_audio(audio_frames):
+    """Play back the recorded audio for debugging purposes."""
+    if not audio_frames:
+        click.echo("No audio to play back.")
+        return
+
+    # Create a temporary WAV file
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+        temp_filename = temp_file.name
+
+    # Write the audio frames to the WAV file
+    with wave.open(temp_filename, "wb") as wf:
+        wf.setnchannels(CHANNELS)
+        wf.setsampwidth(pyaudio.get_sample_size(AUDIO_FORMAT))
+        wf.setframerate(RATE)
+        wf.writeframes(b"".join(audio_frames))
+
+    click.echo("🔊 Playing back recorded audio...")
+
+    try:
+        # Use the macOS afplay command to play the WAV file
+        subprocess.run(["afplay", temp_filename], check=True)
+        click.echo("✅ Audio playback complete.")
+    except Exception as e:
+        logging.error(f"Error playing back audio: {e}")
+        click.echo("⚠️ Failed to play back audio.", err=True)
+    finally:
+        # Clean up the temporary file
+        try:
+            os.unlink(temp_filename)
+        except Exception as e:
+            logging.debug(f"Error removing temporary audio file: {e}")
+
+
 def process_recording():
     """Process the recorded audio and transcribe it."""
     global frames, p, stream
@@ -254,6 +292,10 @@ def process_recording():
         p.terminate()
 
     click.echo("🎙️ Processing audio...")
+
+    # Play back the audio if debug mode is enabled
+    if current_debug_flag:
+        play_recorded_audio(frames)
 
     # Convert audio data to numpy array
     audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
@@ -353,15 +395,25 @@ def initialize_audio():
     default="cmd+alt" if platform.system() == "Darwin" else "ctrl+alt",
     help="Enable hotkey mode with the specified key combination (e.g., 'ctrl+shift+d').",
 )
-def main(model_name, language, copy, hotkey):
+@click.option(
+    "--debug",
+    is_flag=True,
+    default=False,
+    help="Enable debug mode with audio playback after recording.",
+)
+def main(model_name, language, copy, hotkey, debug):
     """Runs the recording and transcription process."""
     global recording_active, p, stream, recording_thread, hotkey_listener
-    global current_model, current_language, current_copy_flag
+    global current_model, current_language, current_copy_flag, current_debug_flag
 
     # Store settings in globals for hotkey mode
     current_model = model_name
     current_language = language
     current_copy_flag = copy
+    current_debug_flag = debug
+
+    if debug:
+        logging.info("Debug mode enabled - will play back recorded audio")
 
     logging.info(f"Using model: {model_name}")
     if language:
@@ -419,11 +471,11 @@ def main(model_name, language, copy, hotkey):
         )
         logging.info("Audio stream opened.")
 
-        # --- Play start sound and start recording ---
-        play_sound(START_SOUND)
+        # --- Start recording first, then play sound ---
         recording_active = True
         recording_thread = threading.Thread(target=record_audio)
         recording_thread.start()
+        play_sound(START_SOUND)
         click.echo("🔴 Recording... Press Enter to stop.")
 
         # Wait for user to press Enter
@@ -453,6 +505,10 @@ def main(model_name, language, copy, hotkey):
             return
 
         click.echo("🎙️ Processing audio...")
+
+        # Play back the audio if debug mode is enabled
+        if debug:
+            play_recorded_audio(frames)
 
         # --- Convert audio data to numpy array ---
         audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
