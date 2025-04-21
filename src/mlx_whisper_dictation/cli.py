@@ -29,6 +29,7 @@ CHUNK = 1024
 # Path to system sound files
 START_SOUND = "/System/Library/Sounds/Blow.aiff"
 STOP_SOUND = "/System/Library/Sounds/Frog.aiff"
+COMPLETE_SOUND = "/System/Library/Sounds/Ping.aiff"
 
 
 class DictationApp:
@@ -349,6 +350,9 @@ class DictationApp:
             # Copy to clipboard if requested
             if self.copy_flag:
                 await self.copy_to_clipboard(transcribed_text)
+
+            # Play completion sound to signal transcription is done
+            await self.play_sound(COMPLETE_SOUND)
         else:
             click.echo("🔇 Transcription result was empty.")
 
