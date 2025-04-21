@@ -1,14 +1,12 @@
 import logging
-import os
 import shutil
 import subprocess
-import tempfile
 import threading
 import time
-import wave
 
 import click
 import mlx_whisper
+import numpy as np
 import pyaudio
 
 # Configure basic logging
@@ -144,7 +142,6 @@ def main(model_name, language, copy):
         )
         return
 
-    temp_file_path = None
     recording_thread = None
 
     try:
@@ -190,21 +187,18 @@ def main(model_name, language, copy):
 
         click.echo("🎙️ Processing audio...")
 
-        # --- Save Audio to Temporary File ---
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            temp_file_path = temp_file.name
-            with wave.open(temp_file_path, "wb") as wf:
-                wf.setnchannels(CHANNELS)
-                wf.setsampwidth(p.get_sample_size(AUDIO_FORMAT))
-                wf.setframerate(RATE)
-                wf.writeframes(b"".join(frames))
-            logging.info(f"Audio saved temporarily to {temp_file_path}")
+        # --- Convert audio data to numpy array ---
+        audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
+        audio_data_fp32 = audio_data.astype(np.float32) / 32768.0
+        logging.info(
+            f"Audio data converted to numpy array with shape {audio_data_fp32.shape}"
+        )
 
         # --- Transcribe Audio ---
         logging.info(f"Starting transcription with model {model_name}...")
         start_time = time.time()
         result = mlx_whisper.transcribe(
-            temp_file_path,
+            audio_data_fp32,
             language=language,  # Pass None for auto-detect
             path_or_hf_repo=model_name,
         )
@@ -266,14 +260,6 @@ def main(model_name, language, copy):
             except Exception as e:
                 logging.debug(f"Error terminating PyAudio: {e}")
                 pass
-
-        # Delete the temporary file
-        if temp_file_path and os.path.exists(temp_file_path):
-            try:
-                os.unlink(temp_file_path)
-                logging.info(f"Temporary file {temp_file_path} deleted.")
-            except Exception as e:
-                logging.error(f"Error deleting temporary file {temp_file_path}: {e}")
 
 
 if __name__ == "__main__":
