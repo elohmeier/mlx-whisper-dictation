@@ -219,13 +219,6 @@ class DictationApp:
                     logging.debug(f"Key released: {key}")
                     if key in self.currently_pressed:
                         self.currently_pressed.remove(key)
-
-                    # Stop listener if esc is pressed
-                    if key == keyboard.Key.esc:
-                        logging.info("ESC key pressed, stopping listener")
-                        # Instead of returning False, stop the listener directly
-                        if self.hotkey_listener:
-                            self.hotkey_listener.stop()
                 except Exception as e:
                     logging.error(f"Error in hotkey release handler: {e}")
 
@@ -430,7 +423,7 @@ class DictationApp:
             click.echo(
                 f"🔑 Hotkey mode enabled. Press {self.hotkey} to start/stop recording."
             )
-            click.echo("Press ESC to exit the program.")
+            click.echo("Press Ctrl+C to exit the program.")
 
             # Initialize audio
             await self.initialize_audio()
